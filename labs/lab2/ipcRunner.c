@@ -16,9 +16,9 @@ int main() {
         execl("./ipc", "ipc", "11", "a", NULL);
         perror("execl");
     } else {
+        usleep(500000);
         execl("./ipc", "ipc", "9", "b", NULL);
         perror("execl");
     }
-
     return 0;
 }

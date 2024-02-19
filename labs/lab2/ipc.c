@@ -44,14 +44,12 @@ int main(int argc, char *argv[]) {
 
     if (shm_fd < 0) {
 
-        // The shared memory object already exists
-        shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
-        if (shm_fd < 0) {
-            perror("shm_open");
-            return 1;
+        // If the shared memory object already exists, open it
+        if (errno == EEXIST) {
+            printf("%s: Shared mem obj already created\n", x);
         }
 
-        printf("%s: Shared mem obj already created\n", x);
+        shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
 
         // Open the pipe
         int pipefd = open("pipe", O_RDONLY);
@@ -101,11 +99,6 @@ int main(int argc, char *argv[]) {
         perror("pipe");
         return 1;
     }
-    int p[2];
-    if (pipe(p) == -1) {
-        perror("pipe");
-        return 1;
-    }
 
     pid_t pid = fork();
     if (pid == 0) {
@@ -116,7 +109,8 @@ int main(int argc, char *argv[]) {
         int nbytes = 1;
         while(!finished && nbytes > 0) {
             nbytes = read(fd[0], buff, 2);
-            if (strcmp(buff, "f") == 0) { // If the char f is in the file, means that it's the end of it
+	    // If the char f is in the file, means that it's the end of it
+            if (strcmp(buff, "f") == 0) { 
                 finished = true;
             }
             else {
@@ -127,13 +121,15 @@ int main(int argc, char *argv[]) {
             
         }
     } else {
+	usleep(500000);
         close(fd[0]);
             for (int i = 0; i < 100; i++) {
                 if(i % n == 0) {
                     write(fd[1], x, strlen(x) + 1);
                 }
             }   
-            write(fd[1], "f", strlen("f") + 1); // Writes a f to indicates the end of the file
+	    // Writes a f to indicates the end of the file
+            write(fd[1], "f", strlen("f") + 1); 
             wait(NULL);
             printf("\n%s: Content in shared memory: %s\n", x, shm_ptr);
         }
